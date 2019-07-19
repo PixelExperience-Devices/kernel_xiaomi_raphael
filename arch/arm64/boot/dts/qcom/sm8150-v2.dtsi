@@ -606,8 +606,6 @@
 	operating-points-v2 = <&gpu_opp_table_v2>;
 
 	qcom,gpu-pwrlevels {
-		#address-cells = <1>;
-		#size-cells = <0>;
 
 		compatible = "qcom,gpu-pwrlevels";
 
