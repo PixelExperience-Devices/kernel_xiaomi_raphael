@@ -248,8 +248,8 @@ int goodix_cfg_bin_proc(void *data)
 
 #ifdef CONFIG_DRM
 	core_data->fb_notifier.notifier_call = goodix_ts_fb_notifier_callback;
-	if (drm_register_client(&core_data->fb_notifier))
-		ts_err("Failed to register fb notifier client:%d", r);
+	//if (drm_register_client(&core_data->fb_notifier))
+		//ts_err("Failed to register fb notifier client:%d", r);
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	core_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
 	core_data->early_suspend.resume = goodix_ts_lateresume;

@@ -774,7 +774,8 @@ static const struct attribute_group sysfs_group = {
 };
 
 int goodix_ts_sysfs_init(struct goodix_ts_core *core_data)
-{	return sysfs_create_group(&core_data->pdev->dev.kobj, &sysfs_group);
+{
+	return sysfs_create_group(&core_data->pdev->dev.kobj, &sysfs_group);
 }
 
 static void goodix_ts_sysfs_exit(struct goodix_ts_core *core_data)
@@ -2602,7 +2603,7 @@ static int goodix_ts_remove(struct platform_device *pdev)
 {
 	struct goodix_ts_core *core_data = platform_get_drvdata(pdev);
 #ifdef CONFIG_DRM
-	drm_unregister_client(&core_data->fb_notifier);
+	//drm_unregister_client(&core_data->fb_notifier);
 #endif
 	power_supply_unreg_notifier(&core_data->power_supply_notifier);
 	goodix_ts_power_off(core_data);
