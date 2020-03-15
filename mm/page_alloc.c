@@ -4028,8 +4028,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	int no_progress_loops;
 	unsigned int cpuset_mems_cookie;
 	int reserve_flags;
-	pg_data_t *pgdat = ac->preferred_zoneref->zone->zone_pgdat;
-	bool woke_kswapd = false;
 
 	/*
 	 * We also sanity check to catch abuse of atomic reserves being used by
@@ -4063,13 +4061,8 @@ retry_cpuset:
 	if (!ac->preferred_zoneref->zone)
 		goto nopage;
 
-	if (gfp_mask & __GFP_KSWAPD_RECLAIM) {
-		if (!woke_kswapd) {
-			atomic_inc(&pgdat->kswapd_waiters);
-			woke_kswapd = true;
-		}
+	if (gfp_mask & __GFP_KSWAPD_RECLAIM)
 		wake_all_kswapds(order, gfp_mask, ac);
-	}
 
 	/*
 	 * The adjusted alloc_flags might result in immediate success, so try
@@ -4181,6 +4174,11 @@ retry:
 	if (fatal_signal_pending(current) && !(gfp_mask & __GFP_NOFAIL))
 		goto nopage;
 
+	/* Boost when memory is low so allocation latency doesn't get too bad */
+	cpu_input_boost_kick_max(250);
+	devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW, 250);
+	devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, 250);
+
 	/* Try direct reclaim and then allocating */
 	page = __alloc_pages_direct_reclaim(gfp_mask, order, alloc_flags, ac,
 							&did_some_progress);
@@ -4203,11 +4201,6 @@ retry:
 	 */
 	if (costly_order && !(gfp_mask & __GFP_RETRY_MAYFAIL))
 		goto nopage;
-
-	/* Boost when memory is low so allocation latency doesn't get too bad */
-	cpu_input_boost_kick_max(100);
-	devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW, 100);
-	devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, 100);
 
 	if (should_reclaim_retry(gfp_mask, order, ac, alloc_flags,
 				 did_some_progress > 0, &no_progress_loops))
@@ -4293,12 +4286,9 @@ nopage:
 		goto retry;
 	}
 fail:
+	warn_alloc(gfp_mask, ac->nodemask,
+			"page allocation failure: order:%u", order);
 got_pg:
-	if (woke_kswapd)
-		atomic_dec(&pgdat->kswapd_waiters);
-	if (!page)
-		warn_alloc(gfp_mask, ac->nodemask,
-				"page allocation failure: order:%u", order);
 	return page;
 }
 
@@ -6243,7 +6233,6 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat)
 	pgdat_page_ext_init(pgdat);
 	spin_lock_init(&pgdat->lru_lock);
 	lruvec_init(node_lruvec(pgdat));
-	pgdat->kswapd_waiters = (atomic_t)ATOMIC_INIT(0);
 
 	pgdat->per_cpu_nodestats = &boot_nodestats;
 
