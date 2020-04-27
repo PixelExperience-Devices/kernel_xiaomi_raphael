@@ -498,7 +498,8 @@ static int map_lookup_elem(union bpf_attr *attr)
 	void __user *uvalue = u64_to_user_ptr(attr->value);
 	int ufd = attr->map_fd;
 	struct bpf_map *map;
-	void *key, *value, *value_onstack[64], *ptr;
+	void *key, *value, *ptr;
+	char value_onstack[64];
 	u32 value_size;
 	struct fd f;
 	int err;
@@ -743,7 +744,8 @@ static int map_get_next_key(union bpf_attr *attr)
 	void __user *unext_key = u64_to_user_ptr(attr->next_key);
 	int ufd = attr->map_fd;
 	struct bpf_map *map;
-	void *key, *next_key, *next_key_onstack[64];
+	void *key, *next_key;
+	char next_key_onstack[64];
 	struct fd f;
 	int err;
 
