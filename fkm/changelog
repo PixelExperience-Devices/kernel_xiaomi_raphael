@@ -1,11 +1,14 @@
 - Merged latest ALS.
-- Switched to ZSTD for zram compression
-- Silenced some dmesg spam.
-- A bit more agressive task biasing towards big cores.
-- Fixed a few app crashes.
-- Touchscreen processing moved to big cluster.
-- Latest CAF and upstream merged.
-- Reduced ram boosting a little bit.
-- Fixed thermal throttling.
-- Improved scheduler a bit.
-- Relaxed CPU latency requirements for GPU.
+- Disallowed taking down cores 4-7 completely (big and prime).
+- Reverted some commits that caused panics.
+- Some scheduler and tcp improvements.
+- Latest upstream and CAF tags merged.
+- Fixed dt2w on AOSPA.
+- Charger improvements/fixes.
+- Renamed the OLDFOD into LOSFOD to avoid confusion.
+
+Standalone versions will ship embedded dtbo from now on,
+which means that it will completely ignore dtbo that you flashed.
+
+Version that will ship in ROMs will accept custom dtbos and screen OC
+should work fine now.

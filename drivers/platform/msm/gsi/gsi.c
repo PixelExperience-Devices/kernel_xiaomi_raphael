@@ -565,7 +565,6 @@ static void gsi_process_chan(struct gsi_xfer_compl_evt *evt,
 	if (callback) {
 		if (atomic_read(&ch_ctx->poll_mode)) {
 			GSIERR("Calling client callback in polling mode\n");
-			WARN_ON(1);
 		}
 		ch_ctx->props.xfer_cb(notify);
 	}
@@ -1004,6 +1003,29 @@ int gsi_unmap_base(void)
 	return 0;
 }
 EXPORT_SYMBOL(gsi_unmap_base);
+
+int gsi_is_mcs_enabled(void)
+{
+	uint32_t mcs_enable = 0;
+
+	if (!gsi_ctx) {
+		pr_err("%s:%d gsi context not allocated\n", __func__, __LINE__);
+		return GSI_STATUS_NODEV;
+	}
+
+	if (!gsi_ctx->base) {
+		GSIERR("GSI base is not mapped\n");
+		return -GSI_STATUS_NODEV;
+	}
+
+	mcs_enable = gsi_readl(gsi_ctx->base + GSI_GSI_MCS_CFG_OFFS);
+
+	pr_info("%s:%d MCS enabled:%x\n", __func__, __LINE__, mcs_enable);
+
+	return (mcs_enable & GSI_GSI_MCS_CFG_MCS_ENABLE_BMSK);
+}
+EXPORT_SYMBOL(gsi_is_mcs_enabled);
+
 
 int gsi_register_device(struct gsi_per_props *props, unsigned long *dev_hdl)
 {

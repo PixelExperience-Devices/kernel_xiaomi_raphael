@@ -1277,10 +1277,7 @@ static int usb_icl_vote_callback(struct votable *votable, void *data,
 	}
 
 	if (chip->cp_ilim_votable) {
-		if (pval.intval != POWER_SUPPLY_CP_WIRELESS)
-			vote(chip->cp_ilim_votable, ICL_CHANGE_VOTER, true, icl_ua);
-		else
-			vote(chip->cp_ilim_votable, ICL_CHANGE_VOTER, false, 0);
+		vote(chip->cp_ilim_votable, ICL_CHANGE_VOTER, false, 0);
 	}
 
 	/* Configure ILIM based on AICL result only if input mode is USBMID */
@@ -1914,6 +1911,11 @@ int qcom_batt_init(struct charger_param *chg_param)
 	if (!chip->pl_ws)
 		goto cleanup;
 
+	INIT_DELAYED_WORK(&chip->status_change_work, status_change_work);
+	INIT_WORK(&chip->pl_taper_work, pl_taper_work);
+	INIT_WORK(&chip->pl_disable_forever_work, pl_disable_forever_work);
+	INIT_DELAYED_WORK(&chip->fcc_stepper_work, fcc_stepper_work);
+
 	chip->fcc_main_votable = create_votable("FCC_MAIN", VOTE_MIN,
 					pl_fcc_main_vote_callback,
 					chip);
@@ -1982,11 +1984,6 @@ int qcom_batt_init(struct charger_param *chg_param)
 	}
 
 	vote(chip->pl_disable_votable, PL_INDIRECT_VOTER, true, 0);
-
-	INIT_DELAYED_WORK(&chip->status_change_work, status_change_work);
-	INIT_WORK(&chip->pl_taper_work, pl_taper_work);
-	INIT_WORK(&chip->pl_disable_forever_work, pl_disable_forever_work);
-	INIT_DELAYED_WORK(&chip->fcc_stepper_work, fcc_stepper_work);
 
 	rc = pl_register_notifier(chip);
 	if (rc < 0) {

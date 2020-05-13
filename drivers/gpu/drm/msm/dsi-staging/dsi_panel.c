@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
  * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1011,11 +1011,6 @@ static int dsi_panel_parse_timing(struct dsi_mode_info *mode,
 		goto error;
 	}
 
-	if (mode->refresh_rate != 60) {
-		pr_warn("setting panel refresh rate to values above 60 is not allowed");
-		mode->refresh_rate = 60;
-	}
-
 	rc = utils->read_u32(utils->data, "qcom,mdss-dsi-panel-width",
 				  &mode->h_active);
 	if (rc) {
@@ -1481,7 +1476,7 @@ static int dsi_panel_parse_qsync_caps(struct dsi_panel *panel,
 static int dsi_panel_parse_dyn_clk_caps(struct dsi_panel *panel)
 {
 	int rc = 0;
-	bool supported = false;
+	bool supported = false, skip_phy_timing_update = false;
 	struct dsi_dyn_clk_caps *dyn_clk_caps = &panel->dyn_clk_caps;
 	struct dsi_parser_utils *utils = &panel->utils;
 	const char *name = panel->name;
@@ -1514,6 +1509,13 @@ static int dsi_panel_parse_dyn_clk_caps(struct dsi_panel *panel)
 		pr_err("[%s] failed to parse supported bit clk list\n", name);
 		return -EINVAL;
 	}
+
+	skip_phy_timing_update = utils->read_bool(utils->data,
+				"qcom,dsi-dyn-clk-skip-timing-update");
+	if (!skip_phy_timing_update)
+		dyn_clk_caps->skip_phy_timing_update = false;
+	else
+		dyn_clk_caps->skip_phy_timing_update = true;
 
 	dyn_clk_caps->dyn_clk_support = true;
 
@@ -4180,7 +4182,6 @@ int dsi_panel_validate_mode(struct dsi_panel *panel,
 
 int dsi_panel_get_mode_count(struct dsi_panel *panel)
 {
-	const u32 SINGLE_MODE_SUPPORT = 1;
 	struct dsi_parser_utils *utils;
 	struct device_node *timings_np;
 	int count, rc = 0;
@@ -4209,11 +4210,6 @@ int dsi_panel_get_mode_count(struct dsi_panel *panel)
 		rc = -EINVAL;
 		goto error;
 	}
-
-	/* No multiresolution support is available for video mode panels */
-	if (panel->panel_mode != DSI_OP_CMD_MODE &&
-		!panel->host_config.ext_bridge_num)
-		count = SINGLE_MODE_SUPPORT;
 
 	panel->num_timing_nodes = count;
 
@@ -5304,6 +5300,7 @@ int panel_disp_param_send(struct dsi_display *display, int param_type)
 		return rc;
 
 	rc = panel_disp_param_send_lock(panel, param_type);
+
 	return rc;
 }
 

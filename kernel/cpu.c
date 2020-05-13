@@ -1034,6 +1034,19 @@ static int do_cpu_down(unsigned int cpu, enum cpuhp_state target)
 	int err;
 
 	/*
+	 * For some reason some vendor versions love taking down
+	 * cores 6 and 7 and never getting them online again.
+	 * This is impossible to debug due to the number of vendor
+	 * versions that people use. Disallow taking big (and prime)
+	 * cores by userspace down completely.
+	 */
+	if (cpumask_intersects(cpumask_of(cpu), cpu_perf_mask) ||
+	    cpumask_intersects(cpumask_of(cpu), cpu_perfp_mask)) {
+		pr_info("%s: trying to take down core %i\n", __func__, cpu);
+		return -EINVAL;
+	}
+
+	/*
 	 * When cpusets are enabled, the rebuilding of the scheduling
 	 * domains is deferred to a workqueue context. Make sure
 	 * that the work is completed before proceeding to the next
@@ -2181,10 +2194,8 @@ int cpuhp_smt_disable(enum cpuhp_smt_control ctrlval)
 		 */
 		cpuhp_offline_cpu_device(cpu);
 	}
-	if (!ret) {
+	if (!ret)
 		cpu_smt_control = ctrlval;
-		arch_smt_update();
-	}
 	cpu_maps_update_done();
 	return ret;
 }
@@ -2195,7 +2206,6 @@ int cpuhp_smt_enable(void)
 
 	cpu_maps_update_begin();
 	cpu_smt_control = CPU_SMT_ENABLED;
-	arch_smt_update();
 	for_each_present_cpu(cpu) {
 		/* Skip online CPUs and CPUs on offline nodes */
 		if (cpu_online(cpu) || !node_online(cpu_to_node(cpu)))
