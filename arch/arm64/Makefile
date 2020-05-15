@@ -94,14 +94,7 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
   endif
 endif
 
-ifeq ($(cc-name),clang)
-# This is a workaround for https://bugs.llvm.org/show_bug.cgi?id=30792.
-# TODO: revert when this is fixed in LLVM.
-KBUILD_CFLAGS	+= -mno-implicit-float
-else
-KBUILD_CFLAGS	+= -mgeneral-regs-only
-endif
-KBUILD_CFLAGS	+= $(lseinstr) $(brokengasinst) $(vdso32)
+KBUILD_CFLAGS	+= -mgeneral-regs-only $(lseinstr) $(brokengasinst) $(vdso32)
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 KBUILD_CFLAGS	+= $(call cc-option, -mpc-relative-literal-loads)
 KBUILD_CFLAGS	+= -fno-pic
@@ -211,15 +204,7 @@ ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 export DTC_FLAGS := -@
 endif
 
-BUILD_DTC_PATH = $(subst $\",,$(CONFIG_BUILD_ARM64_DTC))
-ifneq ($(BUILD_DTC_PATH),)
-	DTC = $(BUILD_DTC_PATH)
-endif
-
-BUILD_DTC_FLAGS = $(subst $\",,$(CONFIG_BUILD_ARM64_DTC_FLAGS))
-ifneq ($(BUILD_DTC_FLAGS),)
-	DTC_FLAGS += $(BUILD_DTC_FLAGS)
-endif
+all:	$(KBUILD_DTBS) $(KBUILD_TARGET)
 
 Image: vmlinux
 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
@@ -255,8 +240,6 @@ Image.gz-dtb: vmlinux scripts dtbs Image.gz
 
 dtbo.img: $(boot)/dts/dtboimg.cfg dtbs
 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
-
-all:	$(KBUILD_DTBS) $(KBUILD_TARGET)
 
 PHONY += vdso_install
 vdso_install:
